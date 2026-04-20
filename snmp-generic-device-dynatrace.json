@@ -1,0 +1,269 @@
+{
+  "name": "[SNMP] Generic Device Dashboard",
+  "type": "dashboard",
+  "content": {
+    "version": 21,
+    "variables": [
+      {
+        "version": 2,
+        "key": "snmp_host",
+        "type": "query",
+        "visible": true,
+        "editable": true,
+        "input": "fetch metrics\n| filter matchesPhrase(metric.key, \"snmp\")\n| summarize by: {snmp_host}\n| fields snmp_host",
+        "multiple": true,
+        "defaultValue": "*"
+      },
+      {
+        "version": 2,
+        "key": "snmp_device",
+        "type": "query",
+        "visible": true,
+        "editable": true,
+        "input": "fetch metrics\n| filter matchesPhrase(metric.key, \"snmp\")\n| summarize by: {snmp_device}\n| fields snmp_device",
+        "multiple": true,
+        "defaultValue": "*"
+      },
+      {
+        "version": 2,
+        "key": "interface",
+        "type": "query",
+        "visible": true,
+        "editable": true,
+        "input": "fetch metrics\n| filter matchesPhrase(metric.key, \"snmp.if\")\n| summarize by: {interface}\n| fields interface",
+        "multiple": true,
+        "defaultValue": "*"
+      }
+    ],
+    "tiles": {
+
+      "header_main": {
+        "type": "markdown",
+        "content": "# 📡 [SNMP] Generic Device Dashboard\nDashboard genérico para monitoramento de dispositivos via SNMP. Use as variáveis acima para filtrar por host, device ou interface específicos."
+      },
+
+      "header_device": {
+        "type": "markdown",
+        "content": "## 🖥️ Device Details"
+      },
+
+      "table_device_status": {
+        "type": "data",
+        "title": "Device Interface Status (Admin vs Oper)",
+        "query": "fetch metrics, from: now()-2h\n| filter metric.key == \"snmp.ifAdminStatus\" or metric.key == \"snmp.ifOperStatus\"\n| filter in(snmp_host, array($snmp_host))\n| summarize adminStatus = avg(if(metric.key==\"snmp.ifAdminStatus\", value, null)),\n            operStatus  = avg(if(metric.key==\"snmp.ifOperStatus\",  value, null)),\n            by: {snmp_device, snmp_host}\n| fieldsAdd status = adminStatus - operStatus",
+        "visualization": "table",
+        "visualizationSettings": {
+          "table": {
+            "rowDensity": "condensed",
+            "enableSparklines": false
+          }
+        }
+      },
+
+      "table_uptime": {
+        "type": "data",
+        "title": "System Uptime by Device (days)",
+        "query": "fetch metrics, from: now()-2h\n| filter metric.key == \"snmp.sysUpTimeInstance\"\n| filter in(snmp_host, array($snmp_host))\n| summarize uptimeDays = min(value) / 8640000, by: {snmp_device, snmp_host}\n| sort uptimeDays asc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "table": {
+            "rowDensity": "condensed"
+          }
+        }
+      },
+
+      "header_interfaces": {
+        "type": "markdown",
+        "content": "## 🔌 Interfaces & Bandwidth\n> **Fórmula Inbound Bandwidth Utilization (%):** `(ifHCInOctets.rate * 8 * 100) / (ifHighSpeed * 1000000)`\n> **Fórmula Outbound Bandwidth Utilization (%):** `(ifHCOutOctets.rate * 8 * 100) / (ifHighSpeed * 1000000)`"
+      },
+
+      "table_interfaces": {
+        "type": "data",
+        "title": "Device Interfaces — Speed, Octets In/Out",
+        "query": "fetch metrics, from: now()-2h\n| filter metric.key in (\"snmp.ifSpeed\", \"snmp.ifHighSpeed\", \"snmp.ifHCInOctets\", \"snmp.ifHCOutOctets\")\n| filter in(snmp_host, array($snmp_host))\n| filter in(interface, array($interface))\n| summarize ifSpeed       = max(if(metric.key==\"snmp.ifSpeed\",       value, null)),\n            ifHighSpeed   = max(if(metric.key==\"snmp.ifHighSpeed\",   value, null)),\n            octetsIn      = max(if(metric.key==\"snmp.ifHCInOctets\",  value, null)),\n            octetsOut     = max(if(metric.key==\"snmp.ifHCOutOctets\", value, null)),\n            by: {snmp_device, snmp_host, interface}\n| sort octetsIn desc",
+        "visualization": "table",
+        "visualizationSettings": {
+          "table": {
+            "rowDensity": "condensed"
+          }
+        }
+      },
+
+      "chart_inbound_bw": {
+        "type": "data",
+        "title": "Inbound Bandwidth Utilization (%)",
+        "query": "fetch metrics, from: now()-2h\n| filter metric.key == \"snmp.ifHCInOctets\" or metric.key == \"snmp.ifHighSpeed\"\n| filter in(snmp_host, array($snmp_host))\n| filter in(interface, array($interface))\n| summarize inOctets  = avg(if(metric.key==\"snmp.ifHCInOctets\",  value, null)),\n            highSpeed = avg(if(metric.key==\"snmp.ifHighSpeed\",    value, null)),\n            by: {bin(timestamp, 1m), snmp_host, interface}\n| fieldsAdd inboundBwUtil = (inOctets * 8.0 * 100.0) / (highSpeed * 1000000.0)\n| fields timestamp, snmp_host, interface, inboundBwUtil",
+        "visualization": "lineChart",
+        "visualizationSettings": {
+          "lineChart": {
+            "legend": { "visible": true }
+          }
+        }
+      },
+
+      "chart_outbound_bw": {
+        "type": "data",
+        "title": "Outbound Bandwidth Utilization (%)",
+        "query": "fetch metrics, from: now()-2h\n| filter metric.key == \"snmp.ifHCOutOctets\" or metric.key == \"snmp.ifHighSpeed\"\n| filter in(snmp_host, array($snmp_host))\n| filter in(interface, array($interface))\n| summarize outOctets = avg(if(metric.key==\"snmp.ifHCOutOctets\", value, null)),\n            highSpeed = avg(if(metric.key==\"snmp.ifHighSpeed\",   value, null)),\n            by: {bin(timestamp, 1m), snmp_host, interface}\n| fieldsAdd outboundBwUtil = (outOctets * 8.0 * 100.0) / (highSpeed * 1000000.0)\n| fields timestamp, snmp_host, interface, outboundBwUtil",
+        "visualization": "lineChart",
+        "visualizationSettings": {
+          "lineChart": {
+            "legend": { "visible": true }
+          }
+        }
+      },
+
+      "header_traffic": {
+        "type": "markdown",
+        "content": "## 📶 Interface Traffic"
+      },
+
+      "chart_inbound_packets": {
+        "type": "data",
+        "title": "Average Inbound Packets (Broadcast + Multicast)",
+        "query": "fetch metrics, from: now()-2h\n| filter metric.key == \"snmp.ifHCInBroadcastPkts\" or metric.key == \"snmp.ifHCInMulticastPkts\"\n| filter in(snmp_host, array($snmp_host))\n| filter in(interface, array($interface))\n| summarize avgPackets = avg(value), by: {bin(timestamp, 1m), snmp_host, interface, metric.key}\n| fields timestamp, snmp_host, interface, metric.key, avgPackets",
+        "visualization": "lineChart"
+      },
+
+      "chart_outbound_packets": {
+        "type": "data",
+        "title": "Average Outbound Packets (Broadcast + Multicast)",
+        "query": "fetch metrics, from: now()-2h\n| filter metric.key == \"snmp.ifHCOutBroadcastPkts\" or metric.key == \"snmp.ifHCOutMulticastPkts\"\n| filter in(snmp_host, array($snmp_host))\n| filter in(interface, array($interface))\n| summarize avgPackets = avg(value), by: {bin(timestamp, 1m), snmp_host, interface, metric.key}\n| fields timestamp, snmp_host, interface, metric.key, avgPackets",
+        "visualization": "lineChart"
+      },
+
+      "chart_inbound_octets": {
+        "type": "data",
+        "title": "Average Inbound Octets (bytes)",
+        "query": "fetch metrics, from: now()-2h\n| filter metric.key == \"snmp.ifHCInOctets\"\n| filter in(snmp_host, array($snmp_host))\n| filter in(interface, array($interface))\n| summarize avgOctets = avg(value), by: {bin(timestamp, 1m), snmp_host, interface}\n| fields timestamp, snmp_host, interface, avgOctets",
+        "visualization": "barChart"
+      },
+
+      "chart_outbound_octets": {
+        "type": "data",
+        "title": "Average Outbound Octets (bytes)",
+        "query": "fetch metrics, from: now()-2h\n| filter metric.key == \"snmp.ifHCOutOctets\"\n| filter in(snmp_host, array($snmp_host))\n| filter in(interface, array($interface))\n| summarize avgOctets = avg(value), by: {bin(timestamp, 1m), snmp_host, interface}\n| fields timestamp, snmp_host, interface, avgOctets",
+        "visualization": "barChart"
+      },
+
+      "toplist_inbound_errors": {
+        "type": "data",
+        "title": "Top 15 — Inbound Interface Errors by Device (packets)",
+        "query": "fetch metrics, from: now()-2h\n| filter metric.key == \"snmp.ifInErrors\"\n| filter in(snmp_host, array($snmp_host))\n| summarize totalErrors = sum(value), by: {snmp_host}\n| sort totalErrors desc\n| limit 15",
+        "visualization": "categoricalBarChart",
+        "visualizationSettings": {
+          "categoricalBarChart": {
+            "categoryAxis": { "key": "snmp_host" },
+            "valueAxis":    { "key": "totalErrors" }
+          }
+        }
+      },
+
+      "toplist_outbound_errors": {
+        "type": "data",
+        "title": "Top 15 — Outbound Interface Errors by Device (packets)",
+        "query": "fetch metrics, from: now()-2h\n| filter metric.key == \"snmp.ifOutErrors\"\n| filter in(snmp_host, array($snmp_host))\n| summarize totalErrors = sum(value), by: {snmp_host}\n| sort totalErrors desc\n| limit 15",
+        "visualization": "categoricalBarChart",
+        "visualizationSettings": {
+          "categoricalBarChart": {
+            "categoryAxis": { "key": "snmp_host" },
+            "valueAxis":    { "key": "totalErrors" }
+          }
+        }
+      },
+
+      "header_cpu_mem": {
+        "type": "markdown",
+        "content": "## ⚙️ Processors & Memory"
+      },
+
+      "chart_mem_util": {
+        "type": "data",
+        "title": "Average Memory Utilization (%)",
+        "query": "fetch metrics, from: now()-2h\n| filter metric.key == \"snmp.cpmCPUMemoryUsed\" or metric.key == \"snmp.cpmCPUMemoryFree\"\n| filter in(snmp_host, array($snmp_host))\n| summarize memUsed = avg(if(metric.key==\"snmp.cpmCPUMemoryUsed\", value, null)),\n            memFree = avg(if(metric.key==\"snmp.cpmCPUMemoryFree\", value, null)),\n            by: {bin(timestamp, 1m), snmp_host}\n| fieldsAdd memUtil = (memUsed / (memUsed + memFree)) * 100.0\n| fields timestamp, snmp_host, memUtil",
+        "visualization": "lineChart",
+        "visualizationSettings": {
+          "lineChart": {
+            "legend": { "visible": true }
+          }
+        }
+      },
+
+      "chart_cpu_util": {
+        "type": "data",
+        "title": "Average CPU Utilization (%)",
+        "query": "fetch metrics, from: now()-2h\n| filter metric.key in (\"snmp.cpmCPUTotalMonIntervalValue\", \"snmp.hrProcessorLoad\", \"snmp.cpmCPUTotal1minRev\")\n| filter in(snmp_host, array($snmp_host))\n| summarize avgCpu = avg(value), by: {bin(timestamp, 1m), snmp_host, metric.key}\n| fields timestamp, snmp_host, metric.key, avgCpu",
+        "visualization": "lineChart",
+        "visualizationSettings": {
+          "lineChart": {
+            "legend": { "visible": true }
+          }
+        }
+      },
+
+      "header_tcp_udp": {
+        "type": "markdown",
+        "content": "## 🌐 TCP / UDP"
+      },
+
+      "chart_udp_in": {
+        "type": "data",
+        "title": "Average Inbound UDP Datagrams",
+        "query": "fetch metrics, from: now()-2h\n| filter metric.key == \"snmp.udpHCInDatagrams\"\n| filter in(snmp_host, array($snmp_host))\n| summarize avgVal = avg(value), by: {bin(timestamp, 1m), snmp_host}\n| fields timestamp, snmp_host, avgVal",
+        "visualization": "barChart"
+      },
+
+      "chart_tcp_active_opens": {
+        "type": "data",
+        "title": "Average Number of Successful TCP Connections",
+        "query": "fetch metrics, from: now()-2h\n| filter metric.key == \"snmp.tcpActiveOpens\"\n| filter in(snmp_host, array($snmp_host))\n| summarize avgVal = avg(value), by: {bin(timestamp, 1m), snmp_host}\n| fields timestamp, snmp_host, avgVal",
+        "visualization": "barChart"
+      },
+
+      "chart_tcp_resets": {
+        "type": "data",
+        "title": "Average Number of TCP Connections Reset",
+        "query": "fetch metrics, from: now()-2h\n| filter metric.key == \"snmp.tcpEstabResets\"\n| filter in(snmp_host, array($snmp_host))\n| summarize avgVal = avg(value), by: {bin(timestamp, 1m), snmp_host}\n| fields timestamp, snmp_host, avgVal",
+        "visualization": "barChart"
+      },
+
+      "chart_tcp_in_segs": {
+        "type": "data",
+        "title": "Average Number of Inbound TCP Segments",
+        "query": "fetch metrics, from: now()-2h\n| filter metric.key == \"snmp.tcpHCInSegs\"\n| filter in(snmp_host, array($snmp_host))\n| summarize avgVal = avg(value), by: {bin(timestamp, 1m), snmp_host}\n| fields timestamp, snmp_host, avgVal",
+        "visualization": "barChart"
+      }
+
+    },
+    "layouts": {
+      "header_main":            { "x": 0,  "y": 0,   "w": 20, "h": 2  },
+
+      "header_device":          { "x": 0,  "y": 2,   "w": 20, "h": 1  },
+      "table_device_status":    { "x": 0,  "y": 3,   "w": 10, "h": 8  },
+      "table_uptime":           { "x": 10, "y": 3,   "w": 10, "h": 8  },
+
+      "header_interfaces":      { "x": 0,  "y": 11,  "w": 20, "h": 2  },
+      "table_interfaces":       { "x": 0,  "y": 13,  "w": 20, "h": 8  },
+      "chart_inbound_bw":       { "x": 0,  "y": 21,  "w": 10, "h": 8  },
+      "chart_outbound_bw":      { "x": 10, "y": 21,  "w": 10, "h": 8  },
+
+      "header_traffic":         { "x": 0,  "y": 29,  "w": 20, "h": 1  },
+      "chart_inbound_packets":  { "x": 0,  "y": 30,  "w": 10, "h": 8  },
+      "chart_outbound_packets": { "x": 10, "y": 30,  "w": 10, "h": 8  },
+      "chart_inbound_octets":   { "x": 0,  "y": 38,  "w": 10, "h": 8  },
+      "chart_outbound_octets":  { "x": 10, "y": 38,  "w": 10, "h": 8  },
+      "toplist_inbound_errors": { "x": 0,  "y": 46,  "w": 10, "h": 8  },
+      "toplist_outbound_errors":{ "x": 10, "y": 46,  "w": 10, "h": 8  },
+
+      "header_cpu_mem":         { "x": 0,  "y": 54,  "w": 20, "h": 1  },
+      "chart_mem_util":         { "x": 0,  "y": 55,  "w": 10, "h": 8  },
+      "chart_cpu_util":         { "x": 10, "y": 55,  "w": 10, "h": 8  },
+
+      "header_tcp_udp":         { "x": 0,  "y": 63,  "w": 20, "h": 1  },
+      "chart_udp_in":           { "x": 0,  "y": 64,  "w": 10, "h": 8  },
+      "chart_tcp_active_opens": { "x": 10, "y": 64,  "w": 10, "h": 8  },
+      "chart_tcp_resets":       { "x": 0,  "y": 72,  "w": 10, "h": 8  },
+      "chart_tcp_in_segs":      { "x": 10, "y": 72,  "w": 10, "h": 8  }
+    }
+  }
+}
