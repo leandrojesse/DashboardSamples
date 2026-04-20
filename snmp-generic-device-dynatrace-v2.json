@@ -1,0 +1,199 @@
+{
+  "name": "[SNMP] Generic Device Dashboard",
+  "type": "dashboard",
+  "content": {
+    "version": 21,
+    "variables": [
+      {
+        "version": 2,
+        "key": "snmp_host",
+        "type": "query",
+        "visible": true,
+        "editable": true,
+        "input": "fetch metrics | filter matchesPhrase(metric.key, \"snmp\") | summarize by: {snmp_host} | fields snmp_host",
+        "multiple": true,
+        "defaultValue": "*"
+      },
+      {
+        "version": 2,
+        "key": "interface",
+        "type": "query",
+        "visible": true,
+        "editable": true,
+        "input": "fetch metrics | filter matchesPhrase(metric.key, \"snmp.if\") | summarize by: {interface} | fields interface",
+        "multiple": true,
+        "defaultValue": "*"
+      }
+    ],
+    "tiles": {
+      "1": {
+        "type": "markdown",
+        "content": "# 📡 [SNMP] Generic Device Dashboard\nDashboard genérico para monitoramento de dispositivos via SNMP. Use as variáveis acima para filtrar por host ou interface."
+      },
+      "2": {
+        "type": "markdown",
+        "content": "## 🖥️ Device Details"
+      },
+      "3": {
+        "type": "data",
+        "title": "System Uptime by Device (days)",
+        "query": "timeseries uptime = min(snmp.sysUpTimeInstance), by: {snmp_host}\n| fieldsAdd uptimeDays = uptime[]/8640000",
+        "visualization": "lineChart",
+        "visualizationSettings": {}
+      },
+      "4": {
+        "type": "data",
+        "title": "Device Interface Status (Admin vs Oper)",
+        "query": "timeseries adminStatus = max(snmp.ifAdminStatus), operStatus = max(snmp.ifOperStatus), by: {snmp_host}\n| fieldsAdd statusDiff = adminStatus[] - operStatus[]",
+        "visualization": "lineChart",
+        "visualizationSettings": {}
+      },
+      "5": {
+        "type": "markdown",
+        "content": "## 🔌 Interfaces & Bandwidth\n\n**Fórmula Inbound (%):** `(ifHCInOctets.rate × 8 × 100) / (ifHighSpeed × 1.000.000)`\n\n**Fórmula Outbound (%):** `(ifHCOutOctets.rate × 8 × 100) / (ifHighSpeed × 1.000.000)`"
+      },
+      "6": {
+        "type": "data",
+        "title": "Device Interfaces — Speed, Octets In/Out",
+        "query": "fetch metrics\n| filter metric.key in (\"snmp.ifSpeed\", \"snmp.ifHighSpeed\", \"snmp.ifHCInOctets\", \"snmp.ifHCOutOctets\")\n| summarize ifSpeed     = max(if(metric.key == \"snmp.ifSpeed\",       value, null)),\n            ifHighSpeed = max(if(metric.key == \"snmp.ifHighSpeed\",   value, null)),\n            octetsIn    = max(if(metric.key == \"snmp.ifHCInOctets\",  value, null)),\n            octetsOut   = max(if(metric.key == \"snmp.ifHCOutOctets\", value, null)),\n            by: {snmp_host, interface}\n| sort octetsIn desc",
+        "visualization": "table",
+        "visualizationSettings": {}
+      },
+      "7": {
+        "type": "data",
+        "title": "Inbound Bandwidth Utilization (%)",
+        "query": "timeseries inOctets = avg(snmp.ifHCInOctets), highSpeed = avg(snmp.ifHighSpeed), by: {snmp_host, interface}\n| fieldsAdd inboundUtil = (inOctets[] * 8.0 * 100.0) / (highSpeed[] * 1000000.0)",
+        "visualization": "lineChart",
+        "visualizationSettings": {}
+      },
+      "8": {
+        "type": "data",
+        "title": "Outbound Bandwidth Utilization (%)",
+        "query": "timeseries outOctets = avg(snmp.ifHCOutOctets), highSpeed = avg(snmp.ifHighSpeed), by: {snmp_host, interface}\n| fieldsAdd outboundUtil = (outOctets[] * 8.0 * 100.0) / (highSpeed[] * 1000000.0)",
+        "visualization": "lineChart",
+        "visualizationSettings": {}
+      },
+      "9": {
+        "type": "markdown",
+        "content": "## 📶 Interface Traffic"
+      },
+      "10": {
+        "type": "data",
+        "title": "Average Inbound Packets (Broadcast + Multicast)",
+        "query": "timeseries broadcastIn = avg(snmp.ifHCInBroadcastPkts), multicastIn = avg(snmp.ifHCInMulticastPkts), by: {snmp_host, interface}",
+        "visualization": "lineChart",
+        "visualizationSettings": {}
+      },
+      "11": {
+        "type": "data",
+        "title": "Average Outbound Packets (Broadcast + Multicast)",
+        "query": "timeseries broadcastOut = avg(snmp.ifHCOutBroadcastPkts), multicastOut = avg(snmp.ifHCOutMulticastPkts), by: {snmp_host, interface}",
+        "visualization": "lineChart",
+        "visualizationSettings": {}
+      },
+      "12": {
+        "type": "data",
+        "title": "Average Inbound Octets (bytes)",
+        "query": "timeseries inOctets = avg(snmp.ifHCInOctets), by: {snmp_host, interface}",
+        "visualization": "barChart",
+        "visualizationSettings": {}
+      },
+      "13": {
+        "type": "data",
+        "title": "Average Outbound Octets (bytes)",
+        "query": "timeseries outOctets = avg(snmp.ifHCOutOctets), by: {snmp_host, interface}",
+        "visualization": "barChart",
+        "visualizationSettings": {}
+      },
+      "14": {
+        "type": "data",
+        "title": "Top 15 — Inbound Interface Errors by Device (packets)",
+        "query": "fetch metrics\n| filter metric.key == \"snmp.ifInErrors\"\n| summarize totalErrors = sum(value), by: {snmp_host}\n| sort totalErrors desc\n| limit 15",
+        "visualization": "categoricalBarChart",
+        "visualizationSettings": {}
+      },
+      "15": {
+        "type": "data",
+        "title": "Top 15 — Outbound Interface Errors by Device (packets)",
+        "query": "fetch metrics\n| filter metric.key == \"snmp.ifOutErrors\"\n| summarize totalErrors = sum(value), by: {snmp_host}\n| sort totalErrors desc\n| limit 15",
+        "visualization": "categoricalBarChart",
+        "visualizationSettings": {}
+      },
+      "16": {
+        "type": "markdown",
+        "content": "## ⚙️ Processors & Memory"
+      },
+      "17": {
+        "type": "data",
+        "title": "Average Memory Utilization (%)",
+        "query": "timeseries memUsed = avg(snmp.cpmCPUMemoryUsed), memFree = avg(snmp.cpmCPUMemoryFree), by: {snmp_host}\n| fieldsAdd memUtil = (memUsed[] / (memUsed[] + memFree[])) * 100.0",
+        "visualization": "lineChart",
+        "visualizationSettings": {}
+      },
+      "18": {
+        "type": "data",
+        "title": "Average CPU Utilization (%)",
+        "query": "timeseries cpuInterval = avg(snmp.cpmCPUTotalMonIntervalValue), cpuProcessor = avg(snmp.hrProcessorLoad), cpu1min = avg(snmp.cpmCPUTotal1minRev), by: {snmp_host}",
+        "visualization": "lineChart",
+        "visualizationSettings": {}
+      },
+      "19": {
+        "type": "markdown",
+        "content": "## 🌐 TCP / UDP"
+      },
+      "20": {
+        "type": "data",
+        "title": "Average Inbound UDP Datagrams",
+        "query": "timeseries udpIn = avg(snmp.udpHCInDatagrams), by: {snmp_host}",
+        "visualization": "barChart",
+        "visualizationSettings": {}
+      },
+      "21": {
+        "type": "data",
+        "title": "Average Successful TCP Connections",
+        "query": "timeseries tcpOpens = avg(snmp.tcpActiveOpens), by: {snmp_host}",
+        "visualization": "barChart",
+        "visualizationSettings": {}
+      },
+      "22": {
+        "type": "data",
+        "title": "Average TCP Connections Reset",
+        "query": "timeseries tcpResets = avg(snmp.tcpEstabResets), by: {snmp_host}",
+        "visualization": "barChart",
+        "visualizationSettings": {}
+      },
+      "23": {
+        "type": "data",
+        "title": "Average Inbound TCP Segments",
+        "query": "timeseries tcpInSegs = avg(snmp.tcpHCInSegs), by: {snmp_host}",
+        "visualization": "barChart",
+        "visualizationSettings": {}
+      }
+    },
+    "layouts": {
+      "1":  { "x": 0,  "y": 0,  "w": 20, "h": 2  },
+      "2":  { "x": 0,  "y": 2,  "w": 20, "h": 1  },
+      "3":  { "x": 0,  "y": 3,  "w": 10, "h": 8  },
+      "4":  { "x": 10, "y": 3,  "w": 10, "h": 8  },
+      "5":  { "x": 0,  "y": 11, "w": 20, "h": 2  },
+      "6":  { "x": 0,  "y": 13, "w": 20, "h": 8  },
+      "7":  { "x": 0,  "y": 21, "w": 10, "h": 8  },
+      "8":  { "x": 10, "y": 21, "w": 10, "h": 8  },
+      "9":  { "x": 0,  "y": 29, "w": 20, "h": 1  },
+      "10": { "x": 0,  "y": 30, "w": 10, "h": 8  },
+      "11": { "x": 10, "y": 30, "w": 10, "h": 8  },
+      "12": { "x": 0,  "y": 38, "w": 10, "h": 8  },
+      "13": { "x": 10, "y": 38, "w": 10, "h": 8  },
+      "14": { "x": 0,  "y": 46, "w": 10, "h": 8  },
+      "15": { "x": 10, "y": 46, "w": 10, "h": 8  },
+      "16": { "x": 0,  "y": 54, "w": 20, "h": 1  },
+      "17": { "x": 0,  "y": 55, "w": 10, "h": 8  },
+      "18": { "x": 10, "y": 55, "w": 10, "h": 8  },
+      "19": { "x": 0,  "y": 63, "w": 20, "h": 1  },
+      "20": { "x": 0,  "y": 64, "w": 10, "h": 8  },
+      "21": { "x": 10, "y": 64, "w": 10, "h": 8  },
+      "22": { "x": 0,  "y": 72, "w": 10, "h": 8  },
+      "23": { "x": 10, "y": 72, "w": 10, "h": 8  }
+    }
+  }
+}
