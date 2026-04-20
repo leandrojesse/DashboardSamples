@@ -1,0 +1,333 @@
+{
+  "version": 15,
+  "variables": [],
+  "tiles": {
+    "0": {
+      "type": "markdown",
+      "title": "",
+      "content": "# 📡 [SNMP] Generic Device Dashboard\nDashboard genérico para monitoramento de dispositivos via SNMP. Ajuste os nomes das métricas conforme a nomenclatura do seu ambiente."
+    },
+    "1": {
+      "type": "markdown",
+      "title": "",
+      "content": "## 🖥️ Device Details"
+    },
+    "2": {
+      "type": "data",
+      "title": "System Uptime by Device (days)",
+      "query": "timeseries uptime = min(snmp.sysUpTimeInstance), by: {snmp_host}\n| fieldsAdd uptimeDays = uptime[] / 8640000",
+      "davis": { "enabled": false, "davisVisualization": { "isAvailable": true } },
+      "visualization": "lineChart",
+      "visualizationSettings": {
+        "thresholds": [],
+        "chartSettings": { "gapPolicy": "connect", "circleChartSettings": { "groupingThresholdType": "relative", "groupingThresholdValue": 0, "valueType": "relative" }, "categoryOverrides": {} },
+        "singleValue": { "showLabel": true, "label": "", "prefixIcon": "", "autoscale": true, "alignment": "center", "colorThresholdTarget": "value" },
+        "table": { "rowDensity": "condensed", "enableSparklines": false, "hiddenColumns": [], "lineWrapIds": [], "columnWidths": {} },
+        "honeycomb": { "shape": "hexagon", "legend": "auto", "dataMappings": {}, "displayedFields": [], "colorMode": "color-palette", "colorPalette": "categorical" },
+        "histogram": { "dataMappings": [] }
+      },
+      "querySettings": { "maxResultRecords": 1000, "defaultScanLimitGbytes": 500, "maxResultMegaBytes": 1, "defaultSamplingRatio": 10, "enableSampling": false }
+    },
+    "3": {
+      "type": "data",
+      "title": "Device Interface Status — Admin vs Oper",
+      "query": "timeseries adminStatus = max(snmp.ifAdminStatus), operStatus = max(snmp.ifOperStatus), by: {snmp_device, snmp_host}\n| fieldsAdd statusDiff = adminStatus[] - operStatus[]\n| fields timeframe, snmp_device, snmp_host, adminStatus, operStatus, statusDiff",
+      "davis": { "enabled": false, "davisVisualization": { "isAvailable": true } },
+      "visualization": "table",
+      "visualizationSettings": {
+        "thresholds": [],
+        "chartSettings": { "gapPolicy": "connect", "circleChartSettings": { "groupingThresholdType": "relative", "groupingThresholdValue": 0, "valueType": "relative" }, "categoryOverrides": {} },
+        "singleValue": { "showLabel": true, "label": "", "prefixIcon": "", "autoscale": true, "alignment": "center", "colorThresholdTarget": "value" },
+        "table": { "rowDensity": "condensed", "enableSparklines": false, "hiddenColumns": [], "lineWrapIds": [], "columnWidths": {} },
+        "honeycomb": { "shape": "hexagon", "legend": "auto", "dataMappings": {}, "displayedFields": [], "colorMode": "color-palette", "colorPalette": "categorical" },
+        "histogram": { "dataMappings": [] }
+      },
+      "querySettings": { "maxResultRecords": 1000, "defaultScanLimitGbytes": 500, "maxResultMegaBytes": 1, "defaultSamplingRatio": 10, "enableSampling": false }
+    },
+    "4": {
+      "type": "markdown",
+      "title": "",
+      "content": "## 🔌 Interfaces & Bandwidth\n\n**Inbound Util (%):** `(ifHCInOctets × 8 × 100) / (ifHighSpeed × 1.000.000)`\n\n**Outbound Util (%):** `(ifHCOutOctets × 8 × 100) / (ifHighSpeed × 1.000.000)`"
+    },
+    "5": {
+      "type": "data",
+      "title": "Device Interfaces — Speed e Octets In/Out",
+      "query": "timeseries ifSpeed     = max(snmp.ifSpeed),\n            ifHighSpeed = max(snmp.ifHighSpeed),\n            octetsIn    = max(snmp.ifHCInOctets),\n            octetsOut   = max(snmp.ifHCOutOctets),\n            by: {snmp_host, interface}\n| fields timeframe, snmp_host, interface, ifSpeed, ifHighSpeed, octetsIn, octetsOut",
+      "davis": { "enabled": false, "davisVisualization": { "isAvailable": true } },
+      "visualization": "table",
+      "visualizationSettings": {
+        "thresholds": [],
+        "chartSettings": { "gapPolicy": "connect", "circleChartSettings": { "groupingThresholdType": "relative", "groupingThresholdValue": 0, "valueType": "relative" }, "categoryOverrides": {} },
+        "singleValue": { "showLabel": true, "label": "", "prefixIcon": "", "autoscale": true, "alignment": "center", "colorThresholdTarget": "value" },
+        "table": { "rowDensity": "condensed", "enableSparklines": false, "hiddenColumns": [], "lineWrapIds": [], "columnWidths": {} },
+        "honeycomb": { "shape": "hexagon", "legend": "auto", "dataMappings": {}, "displayedFields": [], "colorMode": "color-palette", "colorPalette": "categorical" },
+        "histogram": { "dataMappings": [] }
+      },
+      "querySettings": { "maxResultRecords": 1000, "defaultScanLimitGbytes": 500, "maxResultMegaBytes": 1, "defaultSamplingRatio": 10, "enableSampling": false }
+    },
+    "6": {
+      "type": "data",
+      "title": "Inbound Bandwidth Utilization (%)",
+      "query": "timeseries inOctets = avg(snmp.ifHCInOctets), highSpeed = avg(snmp.ifHighSpeed), by: {snmp_host, interface}\n| fieldsAdd inboundUtil = (inOctets[] * 8.0 * 100.0) / (highSpeed[] * 1000000.0)",
+      "davis": { "enabled": false, "davisVisualization": { "isAvailable": true } },
+      "visualization": "lineChart",
+      "visualizationSettings": {
+        "thresholds": [],
+        "chartSettings": { "gapPolicy": "connect", "circleChartSettings": { "groupingThresholdType": "relative", "groupingThresholdValue": 0, "valueType": "relative" }, "categoryOverrides": {} },
+        "singleValue": { "showLabel": true, "label": "", "prefixIcon": "", "autoscale": true, "alignment": "center", "colorThresholdTarget": "value" },
+        "table": { "rowDensity": "condensed", "enableSparklines": false, "hiddenColumns": [], "lineWrapIds": [], "columnWidths": {} },
+        "honeycomb": { "shape": "hexagon", "legend": "auto", "dataMappings": {}, "displayedFields": [], "colorMode": "color-palette", "colorPalette": "categorical" },
+        "histogram": { "dataMappings": [] }
+      },
+      "querySettings": { "maxResultRecords": 1000, "defaultScanLimitGbytes": 500, "maxResultMegaBytes": 1, "defaultSamplingRatio": 10, "enableSampling": false }
+    },
+    "7": {
+      "type": "data",
+      "title": "Outbound Bandwidth Utilization (%)",
+      "query": "timeseries outOctets = avg(snmp.ifHCOutOctets), highSpeed = avg(snmp.ifHighSpeed), by: {snmp_host, interface}\n| fieldsAdd outboundUtil = (outOctets[] * 8.0 * 100.0) / (highSpeed[] * 1000000.0)",
+      "davis": { "enabled": false, "davisVisualization": { "isAvailable": true } },
+      "visualization": "lineChart",
+      "visualizationSettings": {
+        "thresholds": [],
+        "chartSettings": { "gapPolicy": "connect", "circleChartSettings": { "groupingThresholdType": "relative", "groupingThresholdValue": 0, "valueType": "relative" }, "categoryOverrides": {} },
+        "singleValue": { "showLabel": true, "label": "", "prefixIcon": "", "autoscale": true, "alignment": "center", "colorThresholdTarget": "value" },
+        "table": { "rowDensity": "condensed", "enableSparklines": false, "hiddenColumns": [], "lineWrapIds": [], "columnWidths": {} },
+        "honeycomb": { "shape": "hexagon", "legend": "auto", "dataMappings": {}, "displayedFields": [], "colorMode": "color-palette", "colorPalette": "categorical" },
+        "histogram": { "dataMappings": [] }
+      },
+      "querySettings": { "maxResultRecords": 1000, "defaultScanLimitGbytes": 500, "maxResultMegaBytes": 1, "defaultSamplingRatio": 10, "enableSampling": false }
+    },
+    "8": {
+      "type": "markdown",
+      "title": "",
+      "content": "## 📶 Interface Traffic"
+    },
+    "9": {
+      "type": "data",
+      "title": "Average Inbound Packets (Broadcast + Multicast)",
+      "query": "timeseries broadcastIn = avg(snmp.ifHCInBroadcastPkts), multicastIn = avg(snmp.ifHCInMulticastPkts), by: {snmp_host, interface}",
+      "davis": { "enabled": false, "davisVisualization": { "isAvailable": true } },
+      "visualization": "lineChart",
+      "visualizationSettings": {
+        "thresholds": [],
+        "chartSettings": { "gapPolicy": "connect", "circleChartSettings": { "groupingThresholdType": "relative", "groupingThresholdValue": 0, "valueType": "relative" }, "categoryOverrides": {} },
+        "singleValue": { "showLabel": true, "label": "", "prefixIcon": "", "autoscale": true, "alignment": "center", "colorThresholdTarget": "value" },
+        "table": { "rowDensity": "condensed", "enableSparklines": false, "hiddenColumns": [], "lineWrapIds": [], "columnWidths": {} },
+        "honeycomb": { "shape": "hexagon", "legend": "auto", "dataMappings": {}, "displayedFields": [], "colorMode": "color-palette", "colorPalette": "categorical" },
+        "histogram": { "dataMappings": [] }
+      },
+      "querySettings": { "maxResultRecords": 1000, "defaultScanLimitGbytes": 500, "maxResultMegaBytes": 1, "defaultSamplingRatio": 10, "enableSampling": false }
+    },
+    "10": {
+      "type": "data",
+      "title": "Average Outbound Packets (Broadcast + Multicast)",
+      "query": "timeseries broadcastOut = avg(snmp.ifHCOutBroadcastPkts), multicastOut = avg(snmp.ifHCOutMulticastPkts), by: {snmp_host, interface}",
+      "davis": { "enabled": false, "davisVisualization": { "isAvailable": true } },
+      "visualization": "lineChart",
+      "visualizationSettings": {
+        "thresholds": [],
+        "chartSettings": { "gapPolicy": "connect", "circleChartSettings": { "groupingThresholdType": "relative", "groupingThresholdValue": 0, "valueType": "relative" }, "categoryOverrides": {} },
+        "singleValue": { "showLabel": true, "label": "", "prefixIcon": "", "autoscale": true, "alignment": "center", "colorThresholdTarget": "value" },
+        "table": { "rowDensity": "condensed", "enableSparklines": false, "hiddenColumns": [], "lineWrapIds": [], "columnWidths": {} },
+        "honeycomb": { "shape": "hexagon", "legend": "auto", "dataMappings": {}, "displayedFields": [], "colorMode": "color-palette", "colorPalette": "categorical" },
+        "histogram": { "dataMappings": [] }
+      },
+      "querySettings": { "maxResultRecords": 1000, "defaultScanLimitGbytes": 500, "maxResultMegaBytes": 1, "defaultSamplingRatio": 10, "enableSampling": false }
+    },
+    "11": {
+      "type": "data",
+      "title": "Average Inbound Octets (bytes)",
+      "query": "timeseries inOctets = avg(snmp.ifHCInOctets), by: {snmp_host, interface}",
+      "davis": { "enabled": false, "davisVisualization": { "isAvailable": true } },
+      "visualization": "barChart",
+      "visualizationSettings": {
+        "thresholds": [],
+        "chartSettings": { "gapPolicy": "connect", "circleChartSettings": { "groupingThresholdType": "relative", "groupingThresholdValue": 0, "valueType": "relative" }, "categoryOverrides": {} },
+        "singleValue": { "showLabel": true, "label": "", "prefixIcon": "", "autoscale": true, "alignment": "center", "colorThresholdTarget": "value" },
+        "table": { "rowDensity": "condensed", "enableSparklines": false, "hiddenColumns": [], "lineWrapIds": [], "columnWidths": {} },
+        "honeycomb": { "shape": "hexagon", "legend": "auto", "dataMappings": {}, "displayedFields": [], "colorMode": "color-palette", "colorPalette": "categorical" },
+        "histogram": { "dataMappings": [] }
+      },
+      "querySettings": { "maxResultRecords": 1000, "defaultScanLimitGbytes": 500, "maxResultMegaBytes": 1, "defaultSamplingRatio": 10, "enableSampling": false }
+    },
+    "12": {
+      "type": "data",
+      "title": "Average Outbound Octets (bytes)",
+      "query": "timeseries outOctets = avg(snmp.ifHCOutOctets), by: {snmp_host, interface}",
+      "davis": { "enabled": false, "davisVisualization": { "isAvailable": true } },
+      "visualization": "barChart",
+      "visualizationSettings": {
+        "thresholds": [],
+        "chartSettings": { "gapPolicy": "connect", "circleChartSettings": { "groupingThresholdType": "relative", "groupingThresholdValue": 0, "valueType": "relative" }, "categoryOverrides": {} },
+        "singleValue": { "showLabel": true, "label": "", "prefixIcon": "", "autoscale": true, "alignment": "center", "colorThresholdTarget": "value" },
+        "table": { "rowDensity": "condensed", "enableSparklines": false, "hiddenColumns": [], "lineWrapIds": [], "columnWidths": {} },
+        "honeycomb": { "shape": "hexagon", "legend": "auto", "dataMappings": {}, "displayedFields": [], "colorMode": "color-palette", "colorPalette": "categorical" },
+        "histogram": { "dataMappings": [] }
+      },
+      "querySettings": { "maxResultRecords": 1000, "defaultScanLimitGbytes": 500, "maxResultMegaBytes": 1, "defaultSamplingRatio": 10, "enableSampling": false }
+    },
+    "13": {
+      "type": "data",
+      "title": "Top 15 — Inbound Interface Errors by Device",
+      "query": "timeseries errors = sum(snmp.ifInErrors), by: {snmp_host}\n| fields timeframe, snmp_host, errors\n| sort arrayMax(errors) desc\n| limit 15",
+      "davis": { "enabled": false, "davisVisualization": { "isAvailable": true } },
+      "visualization": "categoricalBarChart",
+      "visualizationSettings": {
+        "thresholds": [],
+        "chartSettings": { "gapPolicy": "connect", "circleChartSettings": { "groupingThresholdType": "relative", "groupingThresholdValue": 0, "valueType": "relative" }, "categoryOverrides": {} },
+        "singleValue": { "showLabel": true, "label": "", "prefixIcon": "", "autoscale": true, "alignment": "center", "colorThresholdTarget": "value" },
+        "table": { "rowDensity": "condensed", "enableSparklines": false, "hiddenColumns": [], "lineWrapIds": [], "columnWidths": {} },
+        "honeycomb": { "shape": "hexagon", "legend": "auto", "dataMappings": {}, "displayedFields": [], "colorMode": "color-palette", "colorPalette": "categorical" },
+        "histogram": { "dataMappings": [] }
+      },
+      "querySettings": { "maxResultRecords": 1000, "defaultScanLimitGbytes": 500, "maxResultMegaBytes": 1, "defaultSamplingRatio": 10, "enableSampling": false }
+    },
+    "14": {
+      "type": "data",
+      "title": "Top 15 — Outbound Interface Errors by Device",
+      "query": "timeseries errors = sum(snmp.ifOutErrors), by: {snmp_host}\n| fields timeframe, snmp_host, errors\n| sort arrayMax(errors) desc\n| limit 15",
+      "davis": { "enabled": false, "davisVisualization": { "isAvailable": true } },
+      "visualization": "categoricalBarChart",
+      "visualizationSettings": {
+        "thresholds": [],
+        "chartSettings": { "gapPolicy": "connect", "circleChartSettings": { "groupingThresholdType": "relative", "groupingThresholdValue": 0, "valueType": "relative" }, "categoryOverrides": {} },
+        "singleValue": { "showLabel": true, "label": "", "prefixIcon": "", "autoscale": true, "alignment": "center", "colorThresholdTarget": "value" },
+        "table": { "rowDensity": "condensed", "enableSparklines": false, "hiddenColumns": [], "lineWrapIds": [], "columnWidths": {} },
+        "honeycomb": { "shape": "hexagon", "legend": "auto", "dataMappings": {}, "displayedFields": [], "colorMode": "color-palette", "colorPalette": "categorical" },
+        "histogram": { "dataMappings": [] }
+      },
+      "querySettings": { "maxResultRecords": 1000, "defaultScanLimitGbytes": 500, "maxResultMegaBytes": 1, "defaultSamplingRatio": 10, "enableSampling": false }
+    },
+    "15": {
+      "type": "markdown",
+      "title": "",
+      "content": "## ⚙️ Processors & Memory"
+    },
+    "16": {
+      "type": "data",
+      "title": "Average Memory Utilization (%)",
+      "query": "timeseries memUsed = avg(snmp.cpmCPUMemoryUsed), memFree = avg(snmp.cpmCPUMemoryFree), by: {snmp_host}\n| fieldsAdd memUtil = (memUsed[] / (memUsed[] + memFree[])) * 100.0",
+      "davis": { "enabled": false, "davisVisualization": { "isAvailable": true } },
+      "visualization": "lineChart",
+      "visualizationSettings": {
+        "thresholds": [],
+        "chartSettings": { "gapPolicy": "connect", "circleChartSettings": { "groupingThresholdType": "relative", "groupingThresholdValue": 0, "valueType": "relative" }, "categoryOverrides": {} },
+        "singleValue": { "showLabel": true, "label": "", "prefixIcon": "", "autoscale": true, "alignment": "center", "colorThresholdTarget": "value" },
+        "table": { "rowDensity": "condensed", "enableSparklines": false, "hiddenColumns": [], "lineWrapIds": [], "columnWidths": {} },
+        "honeycomb": { "shape": "hexagon", "legend": "auto", "dataMappings": {}, "displayedFields": [], "colorMode": "color-palette", "colorPalette": "categorical" },
+        "histogram": { "dataMappings": [] }
+      },
+      "querySettings": { "maxResultRecords": 1000, "defaultScanLimitGbytes": 500, "maxResultMegaBytes": 1, "defaultSamplingRatio": 10, "enableSampling": false }
+    },
+    "17": {
+      "type": "data",
+      "title": "Average CPU Utilization (%)",
+      "query": "timeseries cpuInterval  = avg(snmp.cpmCPUTotalMonIntervalValue),\n            cpuProcessor = avg(snmp.hrProcessorLoad),\n            cpu1min      = avg(snmp.cpmCPUTotal1minRev),\n            by: {snmp_host}",
+      "davis": { "enabled": false, "davisVisualization": { "isAvailable": true } },
+      "visualization": "lineChart",
+      "visualizationSettings": {
+        "thresholds": [],
+        "chartSettings": { "gapPolicy": "connect", "circleChartSettings": { "groupingThresholdType": "relative", "groupingThresholdValue": 0, "valueType": "relative" }, "categoryOverrides": {} },
+        "singleValue": { "showLabel": true, "label": "", "prefixIcon": "", "autoscale": true, "alignment": "center", "colorThresholdTarget": "value" },
+        "table": { "rowDensity": "condensed", "enableSparklines": false, "hiddenColumns": [], "lineWrapIds": [], "columnWidths": {} },
+        "honeycomb": { "shape": "hexagon", "legend": "auto", "dataMappings": {}, "displayedFields": [], "colorMode": "color-palette", "colorPalette": "categorical" },
+        "histogram": { "dataMappings": [] }
+      },
+      "querySettings": { "maxResultRecords": 1000, "defaultScanLimitGbytes": 500, "maxResultMegaBytes": 1, "defaultSamplingRatio": 10, "enableSampling": false }
+    },
+    "18": {
+      "type": "markdown",
+      "title": "",
+      "content": "## 🌐 TCP / UDP"
+    },
+    "19": {
+      "type": "data",
+      "title": "Average Inbound UDP Datagrams",
+      "query": "timeseries udpIn = avg(snmp.udpHCInDatagrams), by: {snmp_host}",
+      "davis": { "enabled": false, "davisVisualization": { "isAvailable": true } },
+      "visualization": "barChart",
+      "visualizationSettings": {
+        "thresholds": [],
+        "chartSettings": { "gapPolicy": "connect", "circleChartSettings": { "groupingThresholdType": "relative", "groupingThresholdValue": 0, "valueType": "relative" }, "categoryOverrides": {} },
+        "singleValue": { "showLabel": true, "label": "", "prefixIcon": "", "autoscale": true, "alignment": "center", "colorThresholdTarget": "value" },
+        "table": { "rowDensity": "condensed", "enableSparklines": false, "hiddenColumns": [], "lineWrapIds": [], "columnWidths": {} },
+        "honeycomb": { "shape": "hexagon", "legend": "auto", "dataMappings": {}, "displayedFields": [], "colorMode": "color-palette", "colorPalette": "categorical" },
+        "histogram": { "dataMappings": [] }
+      },
+      "querySettings": { "maxResultRecords": 1000, "defaultScanLimitGbytes": 500, "maxResultMegaBytes": 1, "defaultSamplingRatio": 10, "enableSampling": false }
+    },
+    "20": {
+      "type": "data",
+      "title": "Average Successful TCP Connections",
+      "query": "timeseries tcpOpens = avg(snmp.tcpActiveOpens), by: {snmp_host}",
+      "davis": { "enabled": false, "davisVisualization": { "isAvailable": true } },
+      "visualization": "barChart",
+      "visualizationSettings": {
+        "thresholds": [],
+        "chartSettings": { "gapPolicy": "connect", "circleChartSettings": { "groupingThresholdType": "relative", "groupingThresholdValue": 0, "valueType": "relative" }, "categoryOverrides": {} },
+        "singleValue": { "showLabel": true, "label": "", "prefixIcon": "", "autoscale": true, "alignment": "center", "colorThresholdTarget": "value" },
+        "table": { "rowDensity": "condensed", "enableSparklines": false, "hiddenColumns": [], "lineWrapIds": [], "columnWidths": {} },
+        "honeycomb": { "shape": "hexagon", "legend": "auto", "dataMappings": {}, "displayedFields": [], "colorMode": "color-palette", "colorPalette": "categorical" },
+        "histogram": { "dataMappings": [] }
+      },
+      "querySettings": { "maxResultRecords": 1000, "defaultScanLimitGbytes": 500, "maxResultMegaBytes": 1, "defaultSamplingRatio": 10, "enableSampling": false }
+    },
+    "21": {
+      "type": "data",
+      "title": "Average TCP Connections Reset",
+      "query": "timeseries tcpResets = avg(snmp.tcpEstabResets), by: {snmp_host}",
+      "davis": { "enabled": false, "davisVisualization": { "isAvailable": true } },
+      "visualization": "barChart",
+      "visualizationSettings": {
+        "thresholds": [],
+        "chartSettings": { "gapPolicy": "connect", "circleChartSettings": { "groupingThresholdType": "relative", "groupingThresholdValue": 0, "valueType": "relative" }, "categoryOverrides": {} },
+        "singleValue": { "showLabel": true, "label": "", "prefixIcon": "", "autoscale": true, "alignment": "center", "colorThresholdTarget": "value" },
+        "table": { "rowDensity": "condensed", "enableSparklines": false, "hiddenColumns": [], "lineWrapIds": [], "columnWidths": {} },
+        "honeycomb": { "shape": "hexagon", "legend": "auto", "dataMappings": {}, "displayedFields": [], "colorMode": "color-palette", "colorPalette": "categorical" },
+        "histogram": { "dataMappings": [] }
+      },
+      "querySettings": { "maxResultRecords": 1000, "defaultScanLimitGbytes": 500, "maxResultMegaBytes": 1, "defaultSamplingRatio": 10, "enableSampling": false }
+    },
+    "22": {
+      "type": "data",
+      "title": "Average Inbound TCP Segments",
+      "query": "timeseries tcpInSegs = avg(snmp.tcpHCInSegs), by: {snmp_host}",
+      "davis": { "enabled": false, "davisVisualization": { "isAvailable": true } },
+      "visualization": "barChart",
+      "visualizationSettings": {
+        "thresholds": [],
+        "chartSettings": { "gapPolicy": "connect", "circleChartSettings": { "groupingThresholdType": "relative", "groupingThresholdValue": 0, "valueType": "relative" }, "categoryOverrides": {} },
+        "singleValue": { "showLabel": true, "label": "", "prefixIcon": "", "autoscale": true, "alignment": "center", "colorThresholdTarget": "value" },
+        "table": { "rowDensity": "condensed", "enableSparklines": false, "hiddenColumns": [], "lineWrapIds": [], "columnWidths": {} },
+        "honeycomb": { "shape": "hexagon", "legend": "auto", "dataMappings": {}, "displayedFields": [], "colorMode": "color-palette", "colorPalette": "categorical" },
+        "histogram": { "dataMappings": [] }
+      },
+      "querySettings": { "maxResultRecords": 1000, "defaultScanLimitGbytes": 500, "maxResultMegaBytes": 1, "defaultSamplingRatio": 10, "enableSampling": false }
+    }
+  },
+  "layouts": {
+    "0":  { "x": 0,  "y": 0,  "w": 20, "h": 2 },
+    "1":  { "x": 0,  "y": 2,  "w": 20, "h": 1 },
+    "2":  { "x": 0,  "y": 3,  "w": 10, "h": 8 },
+    "3":  { "x": 10, "y": 3,  "w": 10, "h": 8 },
+    "4":  { "x": 0,  "y": 11, "w": 20, "h": 2 },
+    "5":  { "x": 0,  "y": 13, "w": 20, "h": 8 },
+    "6":  { "x": 0,  "y": 21, "w": 10, "h": 8 },
+    "7":  { "x": 10, "y": 21, "w": 10, "h": 8 },
+    "8":  { "x": 0,  "y": 29, "w": 20, "h": 1 },
+    "9":  { "x": 0,  "y": 30, "w": 10, "h": 8 },
+    "10": { "x": 10, "y": 30, "w": 10, "h": 8 },
+    "11": { "x": 0,  "y": 38, "w": 10, "h": 8 },
+    "12": { "x": 10, "y": 38, "w": 10, "h": 8 },
+    "13": { "x": 0,  "y": 46, "w": 10, "h": 8 },
+    "14": { "x": 10, "y": 46, "w": 10, "h": 8 },
+    "15": { "x": 0,  "y": 54, "w": 20, "h": 1 },
+    "16": { "x": 0,  "y": 55, "w": 10, "h": 8 },
+    "17": { "x": 10, "y": 55, "w": 10, "h": 8 },
+    "18": { "x": 0,  "y": 63, "w": 20, "h": 1 },
+    "19": { "x": 0,  "y": 64, "w": 10, "h": 8 },
+    "20": { "x": 10, "y": 64, "w": 10, "h": 8 },
+    "21": { "x": 0,  "y": 72, "w": 10, "h": 8 },
+    "22": { "x": 10, "y": 72, "w": 10, "h": 8 }
+  }
+}
