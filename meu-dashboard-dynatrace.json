@@ -1,0 +1,41 @@
+{
+  "name": "Meu Dashboard de Exemplo",
+  "type": "dashboard",
+  "content": {
+    "version": 21,
+    "variables": [],
+    "tiles": {
+      "1": {
+        "type": "markdown",
+        "content": "# 📊 Meu Dashboard de Exemplo\nDashboard de demonstração com consulta de logs via DQL."
+      },
+      "2": {
+        "type": "data",
+        "title": "Logs Recentes",
+        "query": "fetch logs\n| sort timestamp desc\n| limit 50\n| fields timestamp, loglevel, content, dt.entity.host",
+        "visualization": "table",
+        "visualizationSettings": {
+          "table": {
+            "rowDensity": "condensed",
+            "enableSparklines": false,
+            "hiddenColumns": []
+          }
+        }
+      }
+    },
+    "layouts": {
+      "1": {
+        "x": 0,
+        "y": 0,
+        "w": 20,
+        "h": 2
+      },
+      "2": {
+        "x": 0,
+        "y": 2,
+        "w": 20,
+        "h": 10
+      }
+    }
+  }
+}
